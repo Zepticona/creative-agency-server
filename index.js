@@ -194,12 +194,14 @@ client.connect(err => {
     })
   })
 
-  // get all admin emails
-  app.get('/getAdminEmails', (req, res) => {
-    admins.find({})
+  // check admin
+  app.post('/isAdmin', (req, res) => {
+    const userEmail = req.body.email;
+    admins.find({email: userEmail.email})
     .toArray( (err, documents) => {
-      console.log(documents)
+      res.send(documents.length > 0)
     })
+    
   })
 });
 
