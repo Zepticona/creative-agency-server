@@ -33,6 +33,7 @@ client.connect(err => {
   const services = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_SERVICES}`);
   const reviews = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_REVIEWS}`);
   const orders = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_ORDERS}`);
+  const admins = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_ADMINS}`);
 
   app.post('/addASerivceImg', (req, res) => {
       const file = req.files.file;
@@ -138,7 +139,7 @@ client.connect(err => {
     console.log(id)
     console.log(req.body.updatedStatus)
     orders.updateOne(
-      {_id: id},
+      {_id: ObjectId(id)},
       { $set: {status: req.body.updatedStatus}}
       )
       .then(result => {
@@ -181,6 +182,23 @@ client.connect(err => {
     orders.find({})
     .toArray( (err, documents) => {
       res.send(documents)
+    })
+  })
+
+  // Add admins 
+  app.post('/addAdmin', (req, res) => {
+    const adminEmail = req.body;
+    admins.insertOne(adminEmail)
+    .then( result => {
+      console.log(result)
+    })
+  })
+
+  // get all admin emails
+  app.get('/getAdminEmails', (req, res) => {
+    admins.find({})
+    .toArray( (err, documents) => {
+      console.log(documents)
     })
   })
 });
