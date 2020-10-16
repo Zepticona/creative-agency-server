@@ -197,7 +197,8 @@ client.connect(err => {
   // check admin
   app.post('/isAdmin', (req, res) => {
     const userEmail = req.body.email;
-    admins.find({email: userEmail.email})
+    console.log(userEmail)
+    admins.find({email: userEmail})
     .toArray( (err, documents) => {
       res.send(documents.length > 0)
     })
