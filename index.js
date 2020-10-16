@@ -173,33 +173,33 @@ client.connect(err => {
       servName: req.body.servName,
       servDescription: req.body.servDescription
     }
-    const filePath = `${__dirname}/images/${file.name}`;
-    file.mv(filePath, err => {
-      if (err) {
-       res.status(500, send({ msg: 'Failed to upload to server' }))
-      } else {
-        const newImg = fs.readFileSync(filePath);
+    // const filePath = `${__dirname}/images/${fil e.name}`;
+    // file.mv(filePath, err => {
+    //   if (err) {
+    //    res.status(500, send({ msg: 'Failed to upload to server' }))
+    //   } 
+        const newImg = req.files.file.data;
         const encImg = newImg.toString('base64');
         var image = {
-          contentType: req.files.file.mimetype,
-          size: req.files.file.size,
-          img: Buffer(encImg, 'base64')
+          contentType: file.mimetype,
+          size: file.size,
+          img: Buffer.from(encImg, 'base64')
         }
         service.image = image;
         console.log(service)
         services.insertOne(service)
           .then(result => {
-            fs.remove(filePath, err => {
-              if (err) {
-                res.status(500, send({ msg: 'Failed to upload to server' }))
+            // fs.remove(filePath, err => {
+            //   if (err) {
+            //     res.status(500, send({ msg: 'Failed to upload to server' }))
 
-                console.log(err)
-              }
+            //     console.log(err)
+            //   }
               res.send(result.insertedCount > 0)
-            })
+            // })
           })
-      }
-    })
+      
+    // })
   })
   // Get all orders
   app.get('/allOrders', (req, res) => {
