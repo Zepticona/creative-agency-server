@@ -2,6 +2,7 @@
 const express = require('express');
 const MongoClient = require('mongodb').MongoClient;
 const cors = require('cors');
+const fs = require('fs-extra');
 const bodyParser = require('body-parser');
 const fileUpload = require('express-fileupload');
 const ObjectId = require('mongodb').ObjectId
@@ -13,8 +14,8 @@ const app = express();
 // Initializing middlewares
 app.use(cors());
 app.use(bodyParser.urlencoded({
-    extended: true
-  }));
+  extended: true
+}));
 app.use(bodyParser.json());
 app.use(express.static('images'));
 app.use(fileUpload());
@@ -36,64 +37,72 @@ client.connect(err => {
   const admins = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_ADMINS}`);
 
   app.post('/addASerivceImg', (req, res) => {
-      const file = req.files.file;
-      const name = req.body.name;
-      const imgName = file.name;
-      const description = req.body.description;
-      const serviceInfo = {
-        servImg: imgName,
-        servName: name,
-        servDescription: description
-      }
+    const file = req.files.file;
+    const name = req.body.name;
+    const imgName = file.name;
+    const description = req.body.description;
+    const serviceInfo = {
+      servImg: imgName,
+      servName: name,
+      servDescription: description
+    }
+    const filePath = `${__dirname}/images/${file.name}`;
     //   console.log(name, description, file)
-      file.mv(`${__dirname}/images/${file.name}`, err => {
-          if(err) {
-            console.log(err)
-            return res.status(500, send({msg: 'failed to uplaod inmage to serber'}))
-          } else {
-            console.log(serviceInfo);
-            services.insertOne(serviceInfo)
-            .then( result => {
-                console.log(result)
-            })
-            return res.send({name: file.name, path: `/${file.name}` });
-          }
-      })
+    file.mv(filePath, err => {
+      if (err) {
+        console.log(err)
+        return res.status(500, send({ msg: 'failed to uplaod inmage to serber' }))
+      } else {
+        const newImg = fs.readFileSync(filePath);
+        const encImg = newImg.toString('base64');
+        var image = {
+          contentType: req.files.file.mimetype,
+          size: req.files.file.size,
+          img: Buffer(encImg, 'base64')
+        }
+        console.log(serviceInfo);
+        // services.insertOne(serviceInfo)
+        // .then( result => {
+        //     console.log(result)
+        // })
+        return res.send({ name: file.name, path: `/${file.name}` });
+      }
+    })
   })
 
   app.get('/allServices', (req, res) => {
-      services.find({})
-      .toArray( (err, documents) => {
-          res.send(documents)
+    services.find({})
+      .toArray((err, documents) => {
+        res.send(documents)
       })
   })
 
-  app.post( '/addReview', (req, res) => {
+  app.post('/addReview', (req, res) => {
     const file = req.files.file;
     const review = {
-        reviewer: req.body.reviewer,
-        designation: req.body.designation,
-        feedback: req.body.feedback,
-        reviewerImg: file.name
+      reviewer: req.body.reviewer,
+      designation: req.body.designation,
+      feedback: req.body.feedback,
+      reviewerImg: file.name
     }
     file.mv(`${__dirname}/images/${file.name}`, err => {
-        if(err) {
-            console.log(err);
-            return res.status(500, send({msg: 'Failed to upload image to the server'}))
-        } else {
-            reviews.insertOne(review)
-            .then( (results) => {
-                console.log(results)
-            })
-            return res.send({name: file.name, path: `/${file.name}`})
-        }
+      if (err) {
+        console.log(err);
+        return res.status(500, send({ msg: 'Failed to upload image to the server' }))
+      } else {
+        reviews.insertOne(review)
+          .then((results) => {
+            console.log(results)
+          })
+        return res.send({ name: file.name, path: `/${file.name}` })
+      }
     })
   })
 
   app.get('/allReviews', (req, res) => {
-      reviews.find({})
-      .toArray( (err, documents) => {
-          res.send(documents)
+    reviews.find({})
+      .toArray((err, documents) => {
+        res.send(documents)
       })
   })
 
@@ -101,35 +110,35 @@ client.connect(err => {
   app.get('/userPanel/orders/:serviceId', (req, res) => {
     //   const id = JSON.parse(req.params.serviceId);
     //   console.log(id)
-      console.log(req.params.serviceId)
+    console.log(req.params.serviceId)
     // const zId = ObjectId(req.params.serviceId)
     // console.log(zId)
     // console.log(req.query)
-      services.find({
-          _id: ObjectId(req.params.serviceId)
+    services.find({
+      _id: ObjectId(req.params.serviceId)
+    })
+      .toArray((err, documents) => {
+        res.send(documents[0])
       })
-      .toArray( (err, documents) => {
-          res.send(documents[0])
-      })
-      
+
   })
 
   // Post(Place) order
   app.post('/placeOrder', (req, res) => {
     const orderInfo = req.body;
-    orders.insertOne(orderInfo)    
-    .then( result => {
+    orders.insertOne(orderInfo)
+      .then(result => {
         res.send(result.insertedCount > 0)
-    })
+      })
   })
 
   // Get user specific orders
   app.get('/orders/:email', (req, res) => {
     const loggedInUser = req.params.email;
-    orders.find({email: loggedInUser})
-    .toArray( (err, documents) => {
+    orders.find({ email: loggedInUser })
+      .toArray((err, documents) => {
         res.send(documents)
-    })
+      })
 
   })
 
@@ -139,9 +148,9 @@ client.connect(err => {
     console.log(id)
     console.log(req.body.updatedStatus)
     orders.updateOne(
-      {_id: ObjectId(id)},
-      { $set: {status: req.body.updatedStatus}}
-      )
+      { _id: ObjectId(id) },
+      { $set: { status: req.body.updatedStatus } }
+    )
       .then(result => {
         console.log(result)
       })
@@ -152,57 +161,72 @@ client.connect(err => {
     const review = req.body;
     console.log(review)
     reviews.insertOne(review)
-    .then( result => {
-      res.send(result.insertedCount > 0)
-    })
+      .then(result => {
+        res.send(result.insertedCount > 0)
+      })
   })
 
   // Add New Service
   app.post('/addService', (req, res) => {
     const file = req.files.file;
     const service = {
-      servImg: file.name,
       servName: req.body.servName,
       servDescription: req.body.servDescription
     }
-    file.mv(`${__dirname}/images/${file.name}`, err => {
-      if(err) {
-        return res.status(500, send({msg: 'Failed to upload to server'}))
+    const filePath = `${__dirname}/images/${file.name}`;
+    file.mv(filePath, err => {
+      if (err) {
+       res.status(500, send({ msg: 'Failed to upload to server' }))
       } else {
+        const newImg = fs.readFileSync(filePath);
+        const encImg = newImg.toString('base64');
+        var image = {
+          contentType: req.files.file.mimetype,
+          size: req.files.file.size,
+          img: Buffer(encImg, 'base64')
+        }
+        service.image = image;
+        console.log(service)
         services.insertOne(service)
-        .then(result => {
-          console.log(result)
-        })
-        return res.send({name: file.name, path: `/${file.name}`})
+          .then(result => {
+            fs.remove(filePath, err => {
+              if (err) {
+                res.status(500, send({ msg: 'Failed to upload to server' }))
+
+                console.log(err)
+              }
+              res.send(result.insertedCount > 0)
+            })
+          })
       }
     })
   })
   // Get all orders
   app.get('/allOrders', (req, res) => {
     orders.find({})
-    .toArray( (err, documents) => {
-      res.send(documents)
-    })
+      .toArray((err, documents) => {
+        res.send(documents)
+      })
   })
 
   // Add admins 
   app.post('/addAdmin', (req, res) => {
     const adminEmail = req.body;
     admins.insertOne(adminEmail)
-    .then( result => {
-      console.log(result)
-    })
+      .then(result => {
+        console.log(result)
+      })
   })
 
   // check admin
   app.post('/isAdmin', (req, res) => {
     const userEmail = req.body.email;
     console.log(userEmail)
-    admins.find({email: userEmail})
-    .toArray( (err, documents) => {
-      res.send(documents.length > 0)
-    })
-    
+    admins.find({ email: userEmail })
+      .toArray((err, documents) => {
+        res.send(documents.length > 0)
+      })
+
   })
 });
 
@@ -213,4 +237,4 @@ client.connect(err => {
 
 
 // Listening to host for server
-app.listen(8080, () => console.log('server running at port 8080'))
+app.listen (process.env.PORT || 8080, () => console.log('server running at port 8080'))
